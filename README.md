@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DesiEvents
 
-## Getting Started
+A directory that helps Indian families in the USA and Canada plan weddings, sangeets, pujas and other celebrations. Search venues, caterers, decorators, bartenders, photographers, DJs, event rentals, bakers, makeup artists, mehndi artists, helpers and more, filtered by location, budget and guest count. Compare prices, read reviews with photos, and contact vendors directly.
 
-First, run the development server:
+Listing is free for vendors for now.
+
+## Run it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Requires Node 22.13+ (uses the built-in `node:sqlite`). On first run, `data/app.db` is created and filled with **fictional sample listings** (labelled "Sample listing" in the UI). To start fresh, delete the `data/` folder.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How it's built
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Next.js 16** (App Router, Cache Components) + **Tailwind CSS 4**
+- **SQLite** via `node:sqlite`. Schema is in `src/lib/db.ts` and queries in `src/lib/queries.ts`
+- Review photos are saved to `data/uploads/` and served by `src/app/uploads/[file]/route.ts`
 
-## Learn More
+| Page | File |
+| --- | --- |
+| Home + search | `src/app/page.tsx` |
+| Search results | `src/app/search/page.tsx` |
+| Business profile + reviews | `src/app/business/[slug]/page.tsx` |
+| List your business | `src/app/list-your-business/page.tsx` |
+| Form handlers (review, new listing) | `src/app/actions.ts` |
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Categories live in `src/lib/categories.ts`, metro areas in `src/lib/metros.ts`, and the brand name in `src/lib/site.ts`.
