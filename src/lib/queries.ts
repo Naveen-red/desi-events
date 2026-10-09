@@ -16,7 +16,6 @@ export type Business = {
   phone: string | null;
   email: string | null;
   website: string | null;
-  instagram: string | null;
   price: number;
   price_unit: PriceUnit;
   capacity: number | null;
@@ -129,6 +128,12 @@ export async function getBusinessPhotos(businessId: number): Promise<BusinessPho
   return db
     .prepare("SELECT id, file_name FROM business_photos WHERE business_id = ? ORDER BY id")
     .all(businessId) as BusinessPhoto[];
+}
+
+export async function getBusinessLinks(businessId: number): Promise<string[]> {
+  await connection();
+  const rows = db.prepare("SELECT url FROM business_links WHERE business_id = ? ORDER BY id").all(businessId) as { url: string }[];
+  return rows.map((r) => r.url);
 }
 
 export async function getReviews(businessId: number): Promise<Review[]> {

@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS businesses (
   phone       TEXT,
   email       TEXT,
   website     TEXT,
-  instagram   TEXT,
   price       INTEGER NOT NULL,          -- whole dollars, in the metro's currency
   price_unit  TEXT NOT NULL DEFAULT 'hour',
   capacity    INTEGER,                   -- venues only: max guests
@@ -32,6 +31,13 @@ CREATE TABLE IF NOT EXISTS businesses (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_businesses_search ON businesses (metro, category);
+
+CREATE TABLE IF NOT EXISTS business_links (
+  id          INTEGER PRIMARY KEY,
+  business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  url         TEXT NOT NULL              -- social media or other profile link
+);
+CREATE INDEX IF NOT EXISTS idx_business_links_business ON business_links (business_id);
 
 CREATE TABLE IF NOT EXISTS reviews (
   id            INTEGER PRIMARY KEY,
@@ -76,6 +82,16 @@ function migrate(db: DatabaseSync) {
   if (!columns.some((c) => c.name === "manage_token")) {
     db.exec("ALTER TABLE businesses ADD COLUMN manage_token TEXT");
     db.exec("CREATE UNIQUE INDEX idx_businesses_manage_token ON businesses (manage_token)");
+  }
+  // Instagram used to be its own column; it now lives in business_links with other social links.
+  if (columns.some((c) => c.name === "instagram")) {
+    db.exec(`
+      BEGIN;
+      INSERT INTO business_links (business_id, url)
+        SELECT id, 'https://instagram.com/' || instagram FROM businesses WHERE instagram IS NOT NULL AND instagram != '';
+      ALTER TABLE businesses DROP COLUMN instagram;
+      COMMIT;
+    `);
   }
 }
 

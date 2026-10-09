@@ -2,8 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { createBusiness, type FormState } from "@/app/actions";
+import { submitWithoutReset } from "@/lib/forms";
 import { CATEGORIES, getCategory, PRICE_UNITS } from "@/lib/categories";
 import { METROS } from "@/lib/metros";
+import { SocialLinksInput } from "./social-links-input";
 
 export function ListBusinessForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(createBusiness, undefined);
@@ -11,7 +13,7 @@ export function ListBusinessForm() {
   const [priceUnit, setPriceUnit] = useState("hour");
 
   return (
-    <form action={action} className="space-y-5 rounded-2xl bg-card p-6 ring-1 ring-border">
+    <form onSubmit={submitWithoutReset(action)} className="space-y-5 rounded-2xl bg-card p-6 ring-1 ring-border">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className="label" htmlFor="name">Business name *</label>
@@ -106,10 +108,12 @@ export function ListBusinessForm() {
           <label className="label" htmlFor="website">Website</label>
           <input id="website" name="website" maxLength={200} className="input" placeholder="www.example.com" />
         </div>
-        <div>
-          <label className="label" htmlFor="instagram">Instagram</label>
-          <input id="instagram" name="instagram" maxLength={60} className="input" placeholder="@yourhandle" />
-        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className="font-semibold">Social media</legend>
+        <p className="mb-2 text-sm text-muted">Instagram, Facebook, YouTube, TikTok or any other page that shows your work. You can change these later.</p>
+        <SocialLinksInput />
       </fieldset>
 
       <div>

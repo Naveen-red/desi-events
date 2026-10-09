@@ -5,7 +5,8 @@ import { Suspense } from "react";
 import { deleteBusinessPhoto } from "@/app/actions";
 import { AddPhotosForm } from "@/components/add-photos-form";
 import { CopyLink } from "@/components/copy-link";
-import { getBusinessByToken, getBusinessPhotos } from "@/lib/queries";
+import { EditSocialLinksForm } from "@/components/edit-social-links-form";
+import { getBusinessByToken, getBusinessLinks, getBusinessPhotos } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "Manage your listing",
@@ -32,7 +33,7 @@ async function ManageListing({
   const [{ token }, sp] = await Promise.all([params, searchParams]);
   const b = await getBusinessByToken(token);
   if (!b) notFound();
-  const photos = await getBusinessPhotos(b.id);
+  const [photos, links] = await Promise.all([getBusinessPhotos(b.id), getBusinessLinks(b.id)]);
 
   return (
     <div className="space-y-6">
@@ -44,6 +45,9 @@ async function ManageListing({
       {sp.added && (
         <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">Photos added — they&apos;re now on your listing.</p>
       )}
+      {sp.links && (
+        <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">Social media links saved.</p>
+      )}
 
       <div>
         <h1 className="text-3xl font-bold">Manage {b.name}</h1>
@@ -53,7 +57,7 @@ async function ManageListing({
       <section className="space-y-3 rounded-2xl bg-accent-soft p-6">
         <h2 className="font-semibold">🔑 Save this private link</h2>
         <p className="text-sm">
-          Anyone with this link can change your photos, so don&apos;t share it. Bookmark it or email it to yourself — it&apos;s the only way to get back here.
+          Anyone with this link can change your photos and links, so don&apos;t share it. Bookmark it or email it to yourself — it&apos;s the only way to get back here.
         </p>
         <CopyLink />
       </section>
@@ -83,6 +87,8 @@ async function ManageListing({
       </section>
 
       {photos.length < 20 && <AddPhotosForm token={token} />}
+
+      <EditSocialLinksForm token={token} links={links} />
     </div>
   );
 }

@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ReviewForm } from "@/components/review-form";
+import { SocialLinks } from "@/components/social-links";
 import { Stars } from "@/components/stars";
 import { getCategory, PRICE_UNITS } from "@/lib/categories";
 import { formatPrice, getMetro } from "@/lib/metros";
-import { getBusiness, getBusinessPhotos, getReviews } from "@/lib/queries";
+import { getBusiness, getBusinessLinks, getBusinessPhotos, getReviews } from "@/lib/queries";
 
 export default function BusinessPage({ params, searchParams }: PageProps<"/business/[slug]">) {
   return (
@@ -27,7 +28,7 @@ async function BusinessDetails({
   const [{ slug }, sp] = await Promise.all([params, searchParams]);
   const b = await getBusiness(slug);
   if (!b) notFound();
-  const [reviews, photos] = await Promise.all([getReviews(b.id), getBusinessPhotos(b.id)]);
+  const [reviews, photos, links] = await Promise.all([getReviews(b.id), getBusinessPhotos(b.id), getBusinessLinks(b.id)]);
   const category = getCategory(b.category);
   const metro = getMetro(b.metro);
 
@@ -82,8 +83,13 @@ async function BusinessDetails({
               {b.phone && <ContactLink href={`tel:${b.phone.replace(/[^\d+]/g, "")}`}>📞 {b.phone}</ContactLink>}
               {b.email && <ContactLink href={`mailto:${b.email}`}>✉️ {b.email}</ContactLink>}
               {b.website && <ContactLink href={/^https?:\/\//.test(b.website) ? b.website : `https://${b.website}`}>🌐 Website</ContactLink>}
-              {b.instagram && <ContactLink href={`https://instagram.com/${b.instagram}`}>📷 @{b.instagram}</ContactLink>}
             </div>
+            {links.length > 0 && (
+              <>
+                <div className="mt-5 text-sm text-muted">See their work</div>
+                <SocialLinks links={links} className="mt-2 space-y-2 text-sm" />
+              </>
+            )}
           </div>
         </aside>
       </div>

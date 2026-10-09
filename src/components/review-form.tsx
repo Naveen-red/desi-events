@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { submitReview, type FormState } from "@/app/actions";
+import { submitWithoutReset } from "@/lib/forms";
 import { EVENT_TYPES } from "@/lib/categories";
 
 export function ReviewForm({ slug }: { slug: string }) {
@@ -9,7 +10,7 @@ export function ReviewForm({ slug }: { slug: string }) {
   const [rating, setRating] = useState(0);
 
   return (
-    <form action={action} className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border">
+    <form onSubmit={submitWithoutReset(action)} className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border">
       <h3 className="text-lg font-semibold">Hired them? Leave a review</h3>
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="rating" value={rating} />

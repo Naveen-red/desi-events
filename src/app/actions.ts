@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db, transaction, UPLOAD_DIR } from "@/lib/db";
 import { getCategory, PRICE_UNITS, type PriceUnit } from "@/lib/categories";
 import { getMetro } from "@/lib/metros";
+import { MAX_SOCIAL_LINKS, normalizeLink } from "@/lib/social";
 
 export type FormState = { error?: string } | undefined;
 
@@ -48,6 +49,19 @@ async function savePhotos(photos: File[]): Promise<string[]> {
     fileNames.push(fileName);
   }
   return fileNames;
+}
+
+// Reads the repeated "socialLinks" inputs, skipping blanks.
+function getSocialLinks(formData: FormData): { links: string[]; error?: string } {
+  const links: string[] = [];
+  for (const value of formData.getAll("socialLinks")) {
+    if (typeof value !== "string" || !value.trim()) continue;
+    const link = normalizeLink(value.slice(0, 300));
+    if (!link) return { links, error: `"${value.trim()}" doesn't look like a link. Paste the full address, e.g. instagram.com/yourpage` };
+    if (!links.includes(link)) links.push(link);
+  }
+  if (links.length > MAX_SOCIAL_LINKS) return { links, error: `You can add up to ${MAX_SOCIAL_LINKS} links.` };
+  return { links };
 }
 
 function getManagedBusiness(token: string) {
@@ -111,6 +125,9 @@ export async function createBusiness(_prev: FormState, formData: FormData): Prom
   if (capacity !== null && (!Number.isFinite(capacity) || capacity <= 0)) return { error: "Capacity must be a number of guests." };
   if (!phone && !email) return { error: "Please add a phone number or email so customers can reach you." };
 
+  const social = getSocialLinks(formData);
+  if (social.error) return { error: social.error };
+
   const photos = getPhotos(formData);
   const photoError = validatePhotos(photos);
   if (photoError) return { error: photoError };
@@ -125,8 +142,8 @@ export async function createBusiness(_prev: FormState, formData: FormData): Prom
   transaction(() => {
     const { lastInsertRowid } = db.prepare(
       `INSERT INTO businesses
-         (slug, name, category, description, metro, city, state, zip, phone, email, website, instagram, price, price_unit, capacity, languages, manage_token)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (slug, name, category, description, metro, city, state, zip, phone, email, website, price, price_unit, capacity, languages, manage_token)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       slug,
       name,
@@ -139,7 +156,6 @@ export async function createBusiness(_prev: FormState, formData: FormData): Prom
       phone,
       email,
       text(formData, "website", 200) || null,
-      text(formData, "instagram", 60).replace(/^@/, "") || null,
       price,
       priceUnit,
       category === "venues" ? capacity : null,
@@ -148,6 +164,8 @@ export async function createBusiness(_prev: FormState, formData: FormData): Prom
     );
     const insertPhoto = db.prepare("INSERT INTO business_photos (business_id, file_name) VALUES (?, ?)");
     for (const fileName of fileNames) insertPhoto.run(lastInsertRowid, fileName);
+    const insertLink = db.prepare("INSERT INTO business_links (business_id, url) VALUES (?, ?)");
+    for (const link of social.links) insertLink.run(lastInsertRowid, link);
   });
 
   redirect(`/manage/${token}?new=1`);
@@ -175,6 +193,23 @@ export async function addBusinessPhotos(_prev: FormState, formData: FormData): P
   });
 
   redirect(`/manage/${token}?added=${fileNames.length}`);
+}
+
+export async function updateSocialLinks(_prev: FormState, formData: FormData): Promise<FormState> {
+  const token = text(formData, "token");
+  const business = getManagedBusiness(token);
+  if (!business) return { error: "This manage link is not valid." };
+
+  const social = getSocialLinks(formData);
+  if (social.error) return { error: social.error };
+
+  transaction(() => {
+    db.prepare("DELETE FROM business_links WHERE business_id = ?").run(business.id);
+    const insertLink = db.prepare("INSERT INTO business_links (business_id, url) VALUES (?, ?)");
+    for (const link of social.links) insertLink.run(business.id, link);
+  });
+
+  redirect(`/manage/${token}?links=1`);
 }
 
 export async function deleteBusinessPhoto(formData: FormData) {
